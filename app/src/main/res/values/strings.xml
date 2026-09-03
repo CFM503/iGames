@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">iGames 启蒙乐园</string>
+    <string name="hub_title">iGames 儿童启蒙</string>
+    <string name="hub_subtitle">快乐探索 · 趣味启蒙</string>
+    <string name="game_traffic_light_title">红绿灯模拟与互动</string>
+    <string name="game_traffic_light_desc">模拟真实交通信号灯，学习交通规则，红灯停绿灯行！</string>
+    <string name="game_coming_soon">更多趣味启蒙游戏正在路上…</string>
+</resources>
