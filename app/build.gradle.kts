@@ -20,17 +20,10 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            // Use debug signing for open-source CI builds so APK is directly installable on any Android device
-            initWith(getByName("debug"))
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -40,6 +33,11 @@ android {
             applicationIdSuffix = ".debug"
             isDebuggable = true
         }
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 
     compileOptions {

@@ -154,7 +154,7 @@ fun UpdateDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             LinearProgressIndicator(
-                                progress = { status.progress / 100f },
+                                progress = status.progress / 100f,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(10.dp)
