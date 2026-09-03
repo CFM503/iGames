@@ -19,6 +19,7 @@ import com.igames.kids.core.theme.LampHousingDark
 @Composable
 fun TrafficLightHousing(
     modifier: Modifier = Modifier,
+    innerPadding: Dp = 16.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(
@@ -49,7 +50,7 @@ fun TrafficLightHousing(
                 ),
                 shape = RoundedCornerShape(36.dp)
             )
-            .padding(16.dp),
+            .padding(innerPadding),
         contentAlignment = Alignment.Center,
         content = content
     )

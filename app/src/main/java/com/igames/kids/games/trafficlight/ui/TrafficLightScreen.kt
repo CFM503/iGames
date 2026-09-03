@@ -1,11 +1,14 @@
-﻿package com.igames.kids.games.trafficlight.ui
+package com.igames.kids.games.trafficlight.ui
 
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +43,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,6 +72,49 @@ import com.igames.kids.games.trafficlight.ui.components.ClassicLightView
 import com.igames.kids.games.trafficlight.ui.components.DigitalCountdownView
 import com.igames.kids.games.trafficlight.ui.components.PedestrianLightView
 import com.igames.kids.games.trafficlight.ui.components.TrafficLightHousing
+
+/**
+ * Custom gesture modifier that cleanly distinguishes between:
+ * - Single click/tap: triggers manual light change
+ * - Horizontal swipe left: switches to next light style
+ * - Horizontal swipe right: switches to previous light style
+ */
+private fun Modifier.trafficLightGesture(
+    onTap: () -> Unit,
+    onSwipeLeft: () -> Unit,
+    onSwipeRight: () -> Unit
+): Modifier = this.pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        var totalDragX = 0f
+        var totalDragY = 0f
+        var isDrag = false
+        while (true) {
+            val event = awaitPointerEvent()
+            val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+            if (change.changedToUp()) {
+                if (isDrag) {
+                    val threshold = 50.dp.toPx()
+                    if (totalDragX < -threshold) {
+                        onSwipeLeft()
+                    } else if (totalDragX > threshold) {
+                        onSwipeRight()
+                    }
+                } else {
+                    onTap()
+                }
+                break
+            }
+            val drag = change.positionChange()
+            totalDragX += drag.x
+            totalDragY += drag.y
+            if (Math.abs(totalDragX) > 18.dp.toPx() && Math.abs(totalDragX) > Math.abs(totalDragY)) {
+                isDrag = true
+                change.consume()
+            }
+        }
+    }
+}
 
 @Composable
 fun TrafficLightScreen(
@@ -139,75 +188,88 @@ fun TrafficLightScreen(
 
     var isMuted by remember { mutableStateOf(!soundManager.isSoundEffectsEnabled && !soundManager.isVoiceEnabled) }
 
+    // Helpers for switching styles via swipe
+    val styles = TrafficLightStyle.entries
+    val onSwipeToNextStyle = {
+        soundManager.playButtonTap()
+        val currentIndex = styles.indexOf(currentConfig.style)
+        val nextStyle = styles[(currentIndex + 1) % styles.size]
+        onStyleChange(nextStyle)
+        controller.resetToRed()
+    }
+    val onSwipeToPrevStyle = {
+        soundManager.playButtonTap()
+        val currentIndex = styles.indexOf(currentConfig.style)
+        val prevStyle = styles[(currentIndex - 1 + styles.size) % styles.size]
+        onStyleChange(prevStyle)
+        controller.resetToRed()
+    }
+    val onScreenTapToCycleLight = {
+        soundManager.playButtonTap()
+        controller.cycleNextManualState()
+    }
+
     if (isMaximized) {
-        // Fullscreen Giant Traffic Light Mode (让红绿灯铺满屏幕)
-        Box(
+        // Fullscreen Giant Traffic Light Mode (让红绿灯贴紧屏幕边缘，超大尺寸展现)
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F141A))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    soundManager.playButtonTap()
-                    controller.cycleNextManualState()
-                },
+                .background(Color(0xFF0C0F14))
+                .trafficLightGesture(
+                    onTap = onScreenTapToCycleLight,
+                    onSwipeLeft = onSwipeToNextStyle,
+                    onSwipeRight = onSwipeToPrevStyle
+                ),
             contentAlignment = Alignment.Center
         ) {
-            // Scaled-up Traffic Light Housing filling the screen
+            val screenW = maxWidth
+            val screenH = maxHeight
+
+            // Edge-to-edge Traffic Light Housing hugging screen borders
             TrafficLightHousing(
                 modifier = Modifier
-                    .padding(16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        soundManager.playButtonTap()
-                        controller.cycleNextManualState()
-                    }
+                    .padding(horizontal = 2.dp, vertical = 4.dp)
+                    .fillMaxWidth(0.98f),
+                innerPadding = 4.dp
             ) {
                 when (currentConfig.style) {
                     TrafficLightStyle.CLASSIC_3_LAMP -> {
+                        // Maximize 3 lamps dynamically to fill screen width and height
+                        val classicLampSize = minOf(screenW * 0.70f, (screenH - 70.dp) / 3.35f)
                         ClassicLightView(
                             state = state,
                             isBlinkVisible = isBlinkPhaseVisible,
-                            lampSize = 135.dp,
-                            onLampClick = {
-                                soundManager.playButtonTap()
-                                controller.cycleNextManualState()
-                            }
+                            lampSize = classicLampSize,
+                            onLampClick = { onScreenTapToCycleLight() }
                         )
                     }
                     TrafficLightStyle.PEDESTRIAN -> {
+                        // Giant pedestrian lamps up to 260.dp ~ 280.dp!
+                        val pedLampSize = minOf(screenW * 0.88f, (screenH - 70.dp) / 2.25f)
                         PedestrianLightView(
                             state = state,
                             isBlinkVisible = isBlinkPhaseVisible,
-                            lampSize = 180.dp,
-                            onLampClick = {
-                                soundManager.playButtonTap()
-                                controller.cycleNextManualState()
-                            }
+                            lampSize = pedLampSize,
+                            onLampClick = { onScreenTapToCycleLight() }
                         )
                     }
                     TrafficLightStyle.DIGITAL_COUNTDOWN -> {
-                        val totalSec = when {
-                            state.isRed -> currentConfig.redDuration
-                            state.isYellow -> currentConfig.yellowDuration
-                            else -> currentConfig.greenDuration
-                        }
+                        // Giant countdown circle up to 340.dp ~ 370.dp!
+                        val countdownSize = minOf(screenW * 0.94f, screenH * 0.65f)
                         DigitalCountdownView(
                             state = state,
                             remainingSeconds = remainingSec,
-                            totalSeconds = totalSec,
-                            size = 290.dp
+                            totalSeconds = when {
+                                state.isRed -> currentConfig.redDuration
+                                state.isYellow -> currentConfig.yellowDuration
+                                else -> currentConfig.greenDuration
+                            },
+                            size = countdownSize
                         )
                     }
                     TrafficLightStyle.VEHICLE_WITH_TIMER -> {
-                        val totalSec = when {
-                            state.isRed -> currentConfig.redDuration
-                            state.isYellow -> currentConfig.yellowDuration
-                            else -> currentConfig.greenDuration
-                        }
+                        val horizontalLampSize = minOf((screenW - 50.dp) / 3.4f, 105.dp)
+                        val bottomTimerSize = minOf(screenW * 0.65f, screenH * 0.35f)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -215,18 +277,19 @@ fun TrafficLightScreen(
                             ClassicLightView(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
-                                lampSize = 90.dp,
+                                lampSize = horizontalLampSize,
                                 isHorizontal = true,
-                                onLampClick = {
-                                    soundManager.playButtonTap()
-                                    controller.cycleNextManualState()
-                                }
+                                onLampClick = { onScreenTapToCycleLight() }
                             )
                             DigitalCountdownView(
                                 state = state,
                                 remainingSeconds = remainingSec,
-                                totalSeconds = totalSec,
-                                size = 160.dp,
+                                totalSeconds = when {
+                                    state.isRed -> currentConfig.redDuration
+                                    state.isYellow -> currentConfig.yellowDuration
+                                    else -> currentConfig.greenDuration
+                                },
+                                size = bottomTimerSize,
                                 showStatusHint = false
                             )
                         }
@@ -234,13 +297,13 @@ fun TrafficLightScreen(
                 }
             }
 
-            // Top Left Floating Status & Auto restore button
+            // Top Left Floating Status Badge & Auto Restore
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(16.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White.copy(alpha = 0.90f))
+                    .background(Color.Black.copy(alpha = 0.70f))
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -265,40 +328,60 @@ fun TrafficLightScreen(
                 }
             }
 
-            // Top Right Floating Exit Maximize Button
-            Box(
+            // Top Right Floating Exit Maximize Button & Style Badge
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .size(48.dp)
-                    .shadow(4.dp, CircleShape)
-                    .background(Color.White.copy(alpha = 0.90f), CircleShape)
-                    .clip(CircleShape)
-                    .clickable {
-                        soundManager.playButtonTap()
-                        isMaximized = false
-                    },
-                contentAlignment = Alignment.Center
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.FullscreenExit,
-                    contentDescription = "退出全屏",
-                    tint = KidDeepBlue,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = currentConfig.style.title,
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                        .clip(CircleShape)
+                        .clickable {
+                            soundManager.playButtonTap()
+                            isMaximized = false
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FullscreenExit,
+                        contentDescription = "退出全屏",
+                        tint = KidDeepBlue,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
 
             // Bottom Floating Hint
             Text(
-                text = "👆 单击屏幕任意位置手动切换红绿灯",
-                color = Color.White.copy(alpha = 0.85f),
+                text = "👆 单击切灯 | 👈👉 左右划动切样式",
+                color = Color.White.copy(alpha = 0.90f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 20.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.55f))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.Black.copy(alpha = 0.65f))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
@@ -335,7 +418,6 @@ fun TrafficLightScreen(
             )
 
             // Style Switcher Tabs
-            val styles = TrafficLightStyle.entries
             val selectedIndex = styles.indexOf(currentConfig.style)
             ScrollableTabRow(
                 selectedTabIndex = if (selectedIndex >= 0) selectedIndex else 0,
@@ -367,19 +449,17 @@ fun TrafficLightScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Center Traffic Light Area - Click anywhere to cycle manual light
+            // Center Traffic Light Area - Swipe to change style or tap to cycle light
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        soundManager.playButtonTap()
-                        controller.cycleNextManualState()
-                    },
+                    .trafficLightGesture(
+                        onTap = onScreenTapToCycleLight,
+                        onSwipeLeft = onSwipeToNextStyle,
+                        onSwipeRight = onSwipeToPrevStyle
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 TrafficLightHousing {
@@ -389,10 +469,7 @@ fun TrafficLightScreen(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
                                 lampSize = 88.dp,
-                                onLampClick = {
-                                    soundManager.playButtonTap()
-                                    controller.cycleNextManualState()
-                                }
+                                onLampClick = { onScreenTapToCycleLight() }
                             )
                         }
                         TrafficLightStyle.PEDESTRIAN -> {
@@ -400,10 +477,7 @@ fun TrafficLightScreen(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
                                 lampSize = 110.dp,
-                                onLampClick = {
-                                    soundManager.playButtonTap()
-                                    controller.cycleNextManualState()
-                                }
+                                onLampClick = { onScreenTapToCycleLight() }
                             )
                         }
                         TrafficLightStyle.DIGITAL_COUNTDOWN -> {
@@ -434,10 +508,7 @@ fun TrafficLightScreen(
                                     isBlinkVisible = isBlinkPhaseVisible,
                                     lampSize = 64.dp,
                                     isHorizontal = true,
-                                    onLampClick = {
-                                        soundManager.playButtonTap()
-                                        controller.cycleNextManualState()
-                                    }
+                                    onLampClick = { onScreenTapToCycleLight() }
                                 )
                                 DigitalCountdownView(
                                     state = state,
@@ -462,7 +533,7 @@ fun TrafficLightScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isManualMode) "👮 手动小交警指挥中" else "⏱️ 自动信号灯循环中（点击屏幕切灯）",
+                    text = if (isManualMode) "👮 手动小交警指挥中" else "⏱️ 自动信号灯循环中（点击切灯/左右划动）",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isManualMode) KidCandyRed else KidAppleGreen

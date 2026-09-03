@@ -26,7 +26,7 @@ class UpdateManager(
     var repoName: String = "iGames"
 ) {
     companion object {
-        const val CURRENT_VERSION_NAME = "1.0.2"
+        const val CURRENT_VERSION_NAME = "1.0.3"
         private const val TAG = "UpdateManager"
 
         /**
