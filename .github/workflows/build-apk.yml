@@ -62,6 +62,29 @@ jobs:
           path: build-apks/*.apk
           retention-days: 14
 
+      - name: Update version.json on Tag Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION_TAG="${{ github.ref_name }}"
+          VERSION_CLEAN="${VERSION_TAG#v}"
+          echo "Updating version.json for $VERSION_TAG..."
+          cat <<EOF > version.json
+          {
+            "versionName": "$VERSION_CLEAN",
+            "versionCode": $(date +%s),
+            "tagName": "$VERSION_TAG",
+            "releaseNotes": "🚀 iGames 最新版本 $VERSION_TAG 已发布，包含全新日常生活习惯规范小游戏与体验优化！",
+            "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/$VERSION_TAG/iGames-release.apk",
+            "apkFileName": "iGames-release.apk"
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git commit -m "chore(release): update version.json to $VERSION_TAG [skip ci]" || true
+          git push origin HEAD:main || true
+
       - name: Create GitHub Release (On Tag or Dispatch)
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
@@ -72,15 +95,18 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            ## 🎮 iGames 儿童启蒙游戏合集
+            ## 🎮 iGames 儿童习惯乐园（日常生活规范化启蒙）
 
             ### 🚀 本次更新包含：
             - 🚦 **红绿灯模拟器**：拟真外观、标准三色灯、倒计时数显、行人行走小人
             - ⚙️ **时长自定义设置**：红灯、绿灯、黄灯秒数灵活调节，带儿童防误触锁
             - 🔊 **童趣语音与音效**：红灯停、绿灯行，黄灯等一等
             - 🎮 **小交警过马路启蒙闯关互动游戏**
+            - 🚀 **国内高速在线更新**：针对中国用户优化，支持免翻墙高速下载与自动更新
+            - 🧸 **日常生活规范化矩阵**：刷牙、洗手、收纳、光盘、垃圾分类小游戏矩阵
             
-            ### 📱 安装指南：
-            下载下方的 `iGames-release.apk`，在安卓手机/平板上点击安装即可畅玩！
+            ### 📱 安装与更新指南：
+            - 新用户可直接下载下方的 `iGames-release.apk` 安装；
+            - 已安装旧版本的用户，可直接在应用内点击“检查更新”享受高速在线升级！
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.igames.kids.core.update.UpdateChannel
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
 import com.igames.kids.games.trafficlight.model.TrafficLightStyle
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,8 @@ class TrafficLightPreferences(private val context: Context) {
         val KEY_VOICE_ENABLED = booleanPreferencesKey("voice_enabled")
         val KEY_BLINK_GREEN = booleanPreferencesKey("blink_green")
         val KEY_TICK_SOUND = booleanPreferencesKey("tick_sound")
+        val KEY_UPDATE_CHANNEL = stringPreferencesKey("update_channel")
+        val KEY_CUSTOM_PROXY = stringPreferencesKey("custom_proxy")
     }
 
     val configFlow: Flow<TrafficLightConfig> = context.dataStore.data.map { prefs ->
@@ -53,6 +56,19 @@ class TrafficLightPreferences(private val context: Context) {
         )
     }
 
+    val updateChannelFlow: Flow<UpdateChannel> = context.dataStore.data.map { prefs ->
+        val channelName = prefs[KEY_UPDATE_CHANNEL] ?: UpdateChannel.AUTO.name
+        try {
+            UpdateChannel.valueOf(channelName)
+        } catch (e: Exception) {
+            UpdateChannel.AUTO
+        }
+    }
+
+    val customProxyFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CUSTOM_PROXY] ?: "https://ghproxy.net/"
+    }
+
     suspend fun updateConfig(config: TrafficLightConfig) {
         context.dataStore.edit { prefs ->
             prefs[KEY_RED_SECONDS] = config.redDuration
@@ -63,6 +79,18 @@ class TrafficLightPreferences(private val context: Context) {
             prefs[KEY_VOICE_ENABLED] = config.isVoiceEnabled
             prefs[KEY_BLINK_GREEN] = config.isGreenBlinkEnabled
             prefs[KEY_TICK_SOUND] = config.isTickSoundEnabled
+        }
+    }
+
+    suspend fun setUpdateChannel(channel: UpdateChannel) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_UPDATE_CHANNEL] = channel.name
+        }
+    }
+
+    suspend fun setCustomProxy(prefix: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CUSTOM_PROXY] = prefix
         }
     }
 }

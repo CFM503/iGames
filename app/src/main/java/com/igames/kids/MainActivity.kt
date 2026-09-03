@@ -19,6 +19,7 @@ import com.igames.kids.core.audio.SoundManager
 import com.igames.kids.core.preferences.TrafficLightPreferences
 import com.igames.kids.core.theme.IGamesTheme
 import com.igames.kids.core.theme.KidBackground
+import com.igames.kids.core.update.UpdateChannel
 import com.igames.kids.core.update.UpdateManager
 import com.igames.kids.games.trafficlight.interactive.CrossRoadGameScreen
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
@@ -50,8 +51,16 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val coroutineScope = rememberCoroutineScope()
                     val config by preferences.configFlow.collectAsState(initial = TrafficLightConfig())
+                    val updateChannel by preferences.updateChannelFlow.collectAsState(initial = UpdateChannel.AUTO)
+                    val customProxy by preferences.customProxyFlow.collectAsState(initial = "https://ghproxy.net/")
 
-                    // Silently check for GitHub Release updates on startup
+                    // Synchronize acceleration preferences
+                    LaunchedEffect(updateChannel, customProxy) {
+                        updateManager.currentChannel = updateChannel
+                        updateManager.customProxyPrefix = customProxy
+                    }
+
+                    // Silently check for updates via jsDelivr CDN on startup
                     LaunchedEffect(Unit) {
                         updateManager.checkForUpdates(isManualCheck = false)
                     }
@@ -113,6 +122,14 @@ class MainActivity : ComponentActivity() {
                                 currentConfig = config,
                                 soundManager = soundManager,
                                 updateManager = updateManager,
+                                initialChannel = updateChannel,
+                                initialCustomProxy = customProxy,
+                                onSaveChannel = { channel, proxy ->
+                                    coroutineScope.launch {
+                                        preferences.setUpdateChannel(channel)
+                                        preferences.setCustomProxy(proxy)
+                                    }
+                                },
                                 onSaveConfig = { newConfig ->
                                     coroutineScope.launch {
                                         preferences.updateConfig(newConfig)

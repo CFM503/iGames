@@ -28,6 +28,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -60,6 +63,7 @@ import com.igames.kids.core.theme.KidSkyBlue
 import com.igames.kids.core.theme.LampGreenOn
 import com.igames.kids.core.theme.LampRedOn
 import com.igames.kids.core.theme.LampYellowOn
+import com.igames.kids.core.update.UpdateChannel
 import com.igames.kids.core.update.UpdateDialog
 import com.igames.kids.core.update.UpdateManager
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
@@ -71,6 +75,9 @@ fun TrafficLightSettingsScreen(
     currentConfig: TrafficLightConfig,
     soundManager: SoundManager,
     updateManager: UpdateManager,
+    initialChannel: UpdateChannel = UpdateChannel.AUTO,
+    initialCustomProxy: String = "https://ghproxy.net/",
+    onSaveChannel: ((UpdateChannel, String) -> Unit)? = null,
     onSaveConfig: (TrafficLightConfig) -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -83,6 +90,9 @@ fun TrafficLightSettingsScreen(
     var isSoundEnabled by remember { mutableStateOf(currentConfig.isSoundEnabled) }
     var isGreenBlinkEnabled by remember { mutableStateOf(currentConfig.isGreenBlinkEnabled) }
     var isTickSoundEnabled by remember { mutableStateOf(currentConfig.isTickSoundEnabled) }
+
+    var selectedChannel by remember { mutableStateOf(initialChannel) }
+    var customProxy by remember { mutableStateOf(initialCustomProxy) }
 
     var showUpdateDialog by remember { mutableStateOf(false) }
     val updateInfo by updateManager.updateInfo.collectAsState()
@@ -271,7 +281,7 @@ fun TrafficLightSettingsScreen(
                 }
             }
 
-            // Card 4: Online Updates & Version Info
+            // Card 4: Online Updates & Acceleration Channels
             Card(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -308,6 +318,8 @@ fun TrafficLightSettingsScreen(
                             CuteButton(
                                 onClick = {
                                     soundManager.playButtonTap()
+                                    updateManager.currentChannel = selectedChannel
+                                    updateManager.customProxyPrefix = customProxy
                                     coroutineScope.launch {
                                         updateManager.checkForUpdates(isManualCheck = true)
                                     }
@@ -368,6 +380,75 @@ fun TrafficLightSettingsScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // China Network Acceleration Channels Selector
+                    Text(
+                        text = "⚡ 国内高速下载加速通道",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = KidDeepBlue
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    UpdateChannel.entries.forEach { channel ->
+                        val isSelected = channel == selectedChannel
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) KidSkyBlue.copy(alpha = 0.10f) else Color.Transparent)
+                                .clickable {
+                                    soundManager.playButtonTap()
+                                    selectedChannel = channel
+                                    updateManager.currentChannel = channel
+                                    onSaveChannel?.invoke(channel, customProxy)
+                                }
+                                .padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = {
+                                    soundManager.playButtonTap()
+                                    selectedChannel = channel
+                                    updateManager.currentChannel = channel
+                                    onSaveChannel?.invoke(channel, customProxy)
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = KidSkyBlue)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Column {
+                                Text(
+                                    text = channel.title,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) KidDeepBlue else Color.Black
+                                )
+                                Text(
+                                    text = channel.desc,
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+
+                    if (selectedChannel == UpdateChannel.CUSTOM) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customProxy,
+                            onValueChange = {
+                                customProxy = it
+                                updateManager.customProxyPrefix = it
+                                onSaveChannel?.invoke(selectedChannel, it)
+                            },
+                            label = { Text("加速镜像前缀 (如 https://ghproxy.net/)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
                 }
             }
 
@@ -389,6 +470,8 @@ fun TrafficLightSettingsScreen(
                         isSoundEnabled = true
                         isGreenBlinkEnabled = true
                         isTickSoundEnabled = true
+                        selectedChannel = UpdateChannel.AUTO
+                        customProxy = "https://ghproxy.net/"
                     },
                     backgroundColor = Color(0xFF90A4AE),
                     elevation = 2.dp
@@ -423,6 +506,7 @@ fun TrafficLightSettingsScreen(
                         isGreenBlinkEnabled = isGreenBlinkEnabled,
                         isTickSoundEnabled = isTickSoundEnabled
                     )
+                    onSaveChannel?.invoke(selectedChannel, customProxy)
                     onSaveConfig(newConfig)
                     onNavigateBack()
                 },

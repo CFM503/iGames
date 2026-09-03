@@ -1,5 +1,12 @@
 package com.igames.kids.core.update
 
+enum class UpdateChannel(val title: String, val desc: String) {
+    AUTO("🚀 智能高速（推荐）", "优先尝试国内主流镜像，失败自动平滑重试"),
+    GHPROXY("⚡ GHProxy 镜像", "通过 ghproxy.net 国内反向代理加速"),
+    DIRECT("🌐 官方原版直连", "适合身处海外或开启了网络加速工具的用户"),
+    CUSTOM("🛠️ 自定义代理", "使用自行配置的加速镜像前缀")
+}
+
 data class AppUpdateInfo(
     val hasUpdate: Boolean = false,
     val latestVersionName: String = "",

@@ -56,10 +56,29 @@ class UpdateManager(
                 return false
             }
         }
-    }
 
-    fun isNewerVersion(currentVersion: String, latestTag: String): Boolean =
-        Companion.isNewerVersion(currentVersion, latestTag)
+        fun buildMirrorUrls(rawUrl: String, channel: UpdateChannel, customProxy: String): List<String> {
+            val cleanRaw = rawUrl.trim()
+            if (cleanRaw.isBlank()) return emptyList()
+
+            return when (channel) {
+                UpdateChannel.AUTO -> listOf(
+                    "https://ghproxy.net/$cleanRaw",
+                    "https://gh-proxy.com/$cleanRaw",
+                    cleanRaw
+                )
+                UpdateChannel.GHPROXY -> listOf(
+                    "https://ghproxy.net/$cleanRaw",
+                    "https://gh-proxy.com/$cleanRaw"
+                )
+                UpdateChannel.DIRECT -> listOf(cleanRaw)
+                UpdateChannel.CUSTOM -> {
+                    val prefix = if (customProxy.endsWith("/")) customProxy else "$customProxy/"
+                    listOf("$prefix$cleanRaw", cleanRaw)
+                }
+            }
+        }
+    }
 
     private val _updateInfo = MutableStateFlow(AppUpdateInfo())
     val updateInfo: StateFlow<AppUpdateInfo> = _updateInfo.asStateFlow()
@@ -67,160 +86,213 @@ class UpdateManager(
     private val _downloadStatus = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
     val downloadStatus: StateFlow<DownloadStatus> = _downloadStatus.asStateFlow()
 
+    var currentChannel: UpdateChannel = UpdateChannel.AUTO
+    var customProxyPrefix: String = "https://ghproxy.net/"
+
+    /**
+     * Checks for updates using a multi-channel fallback strategy:
+     * 1. jsDelivr Fastly CDN (version.json) - lightning fast in China
+     * 2. jsDelivr Cloudflare CDN (version.json)
+     * 3. Official GitHub Releases REST API (fallback)
+     */
     suspend fun checkForUpdates(isManualCheck: Boolean = false) {
         _updateInfo.value = _updateInfo.value.copy(isChecking = true, errorMessage = null)
         withContext(Dispatchers.IO) {
-            try {
-                val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
-                val url = URL(apiUrl)
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 10000
-                    readTimeout = 10000
-                    setRequestProperty("Accept", "application/vnd.github.v3+json")
-                    setRequestProperty("User-Agent", "iGames-Android-App")
-                }
+            val candidateEndpoints = listOf(
+                "https://fastly.jsdelivr.net/gh/$repoOwner/$repoName@main/version.json",
+                "https://cdn.jsdelivr.net/gh/$repoOwner/$repoName@main/version.json",
+                "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
+            )
 
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    val json = JSONObject(response)
+            var parsedInfo: AppUpdateInfo? = null
+            var lastError: String? = null
 
-                    val tagName = json.optString("tag_name", "")
-                    val releaseNotes = json.optString("body", "暂无更新说明")
-                    val publishedAt = json.optString("published_at", "")
-
-                    // Look for APK in assets
-                    val assets = json.optJSONArray("assets")
-                    var downloadUrl = ""
-                    var apkFileName = "iGames-release.apk"
-
-                    if (assets != null) {
-                        for (i in 0 until assets.length()) {
-                            val asset = assets.getJSONObject(i)
-                            val name = asset.optString("name", "")
-                            if (name.endsWith(".apk")) {
-                                downloadUrl = asset.optString("browser_download_url", "")
-                                apkFileName = name
-                                if (name.contains("release")) {
-                                    break
-                                }
-                            }
-                        }
+            for (endpoint in candidateEndpoints) {
+                try {
+                    val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 6000
+                        readTimeout = 6000
+                        setRequestProperty("User-Agent", "iGames-Android-App")
+                        setRequestProperty("Accept", "application/json")
                     }
 
-                    val hasNewer = isNewerVersion(CURRENT_VERSION_NAME, tagName)
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                        val json = JSONObject(responseText)
 
-                    _updateInfo.value = AppUpdateInfo(
-                        hasUpdate = hasNewer,
-                        latestVersionName = tagName.removePrefix("v").removePrefix("V"),
-                        latestTag = tagName,
-                        releaseNotes = releaseNotes,
-                        downloadUrl = downloadUrl,
-                        apkFileName = apkFileName,
-                        publishedAt = publishedAt,
-                        isChecking = false,
-                        errorMessage = if (!hasNewer && isManualCheck) "当前已是最新版本 ($CURRENT_VERSION_NAME)" else null
-                    )
-                } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    _updateInfo.value = _updateInfo.value.copy(
-                        isChecking = false,
-                        errorMessage = if (isManualCheck) "尚未发布 Release 版本" else null
-                    )
-                } else {
-                    _updateInfo.value = _updateInfo.value.copy(
-                        isChecking = false,
-                        errorMessage = if (isManualCheck) "检查更新失败 (HTTP $responseCode)" else null
-                    )
+                        if (endpoint.contains("version.json")) {
+                            // Format of version.json
+                            val tagName = json.optString("tagName", "")
+                            val releaseNotes = json.optString("releaseNotes", "新版本日常习惯小游戏与体验优化")
+                            val downloadUrl = json.optString("downloadUrl", "")
+                            val apkFileName = json.optString("apkFileName", "iGames-release.apk")
+                            val publishedAt = json.optString("publishedAt", "")
+                            val hasNewer = isNewerVersion(CURRENT_VERSION_NAME, tagName)
+
+                            parsedInfo = AppUpdateInfo(
+                                hasUpdate = hasNewer,
+                                latestVersionName = tagName.removePrefix("v").removePrefix("V"),
+                                latestTag = tagName,
+                                releaseNotes = releaseNotes,
+                                downloadUrl = downloadUrl,
+                                apkFileName = apkFileName,
+                                publishedAt = publishedAt,
+                                isChecking = false,
+                                errorMessage = if (!hasNewer && isManualCheck) "当前已是最新版本 ($CURRENT_VERSION_NAME)" else null
+                            )
+                            break
+                        } else {
+                            // Format of GitHub API
+                            val tagName = json.optString("tag_name", "")
+                            val releaseNotes = json.optString("body", "暂无更新说明")
+                            val publishedAt = json.optString("published_at", "")
+                            val assets = json.optJSONArray("assets")
+                            var downloadUrl = ""
+                            var apkFileName = "iGames-release.apk"
+
+                            if (assets != null) {
+                                for (i in 0 until assets.length()) {
+                                    val asset = assets.getJSONObject(i)
+                                    val name = asset.optString("name", "")
+                                    if (name.endsWith(".apk")) {
+                                        downloadUrl = asset.optString("browser_download_url", "")
+                                        apkFileName = name
+                                        if (name.contains("release")) break
+                                    }
+                                }
+                            }
+
+                            val hasNewer = isNewerVersion(CURRENT_VERSION_NAME, tagName)
+                            parsedInfo = AppUpdateInfo(
+                                hasUpdate = hasNewer,
+                                latestVersionName = tagName.removePrefix("v").removePrefix("V"),
+                                latestTag = tagName,
+                                releaseNotes = releaseNotes,
+                                downloadUrl = downloadUrl,
+                                apkFileName = apkFileName,
+                                publishedAt = publishedAt,
+                                isChecking = false,
+                                errorMessage = if (!hasNewer && isManualCheck) "当前已是最新版本 ($CURRENT_VERSION_NAME)" else null
+                            )
+                            break
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Endpoint failed: $endpoint, error: ${e.message}")
+                    lastError = e.message
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to check update", e)
+            }
+
+            if (parsedInfo != null) {
+                _updateInfo.value = parsedInfo
+            } else {
                 _updateInfo.value = _updateInfo.value.copy(
                     isChecking = false,
-                    errorMessage = if (isManualCheck) "网络连接异常，请检查网络" else null
+                    errorMessage = if (isManualCheck) "连接更新服务器超时，请检查网络设置 ($lastError)" else null
                 )
             }
         }
     }
 
-    suspend fun downloadApk(downloadUrl: String, fileName: String = "iGames-update.apk") {
-        if (downloadUrl.isBlank()) {
+    /**
+     * Downloads APK using multi-mirror fallback (GHProxy -> Alt Mirror -> Direct)
+     */
+    suspend fun downloadApk(rawDownloadUrl: String, fileName: String = "iGames-update.apk") {
+        if (rawDownloadUrl.isBlank()) {
             _downloadStatus.value = DownloadStatus.Failed("下载链接无效")
             return
         }
 
+        val candidateUrls = buildMirrorUrls(rawDownloadUrl, currentChannel, customProxyPrefix)
         _downloadStatus.value = DownloadStatus.Downloading(0)
 
         withContext(Dispatchers.IO) {
-            var connection: HttpURLConnection? = null
-            var inputStream: InputStream? = null
-            var outputStream: FileOutputStream? = null
-            try {
-                var currentUrl = downloadUrl
-                // Handle GitHub redirects (302)
-                var redirectCount = 0
-                while (redirectCount < 5) {
-                    val url = URL(currentUrl)
-                    connection = (url.openConnection() as HttpURLConnection).apply {
-                        instanceFollowRedirects = false
-                        connectTimeout = 15000
-                        readTimeout = 15000
-                        setRequestProperty("User-Agent", "iGames-Android-App")
-                    }
-                    val code = connection.responseCode
-                    if (code == HttpURLConnection.HTTP_MOVED_TEMP ||
-                        code == HttpURLConnection.HTTP_MOVED_PERM ||
-                        code == 307 || code == 308) {
-                        currentUrl = connection.getHeaderField("Location")
-                        connection.disconnect()
-                        redirectCount++
-                    } else {
-                        break
-                    }
-                }
+            var downloadSuccess = false
+            var finalErrorMessage: String? = null
 
-                if (connection?.responseCode != HttpURLConnection.HTTP_OK) {
-                    _downloadStatus.value = DownloadStatus.Failed("下载服务器响应失败: ${connection?.responseCode}")
-                    return@withContext
-                }
+            for ((index, candidateUrl) in candidateUrls.withIndex()) {
+                Log.i(TAG, "Attempting download route [${index + 1}/${candidateUrls.size}]: $candidateUrl")
+                var connection: HttpURLConnection? = null
+                var inputStream: InputStream? = null
+                var outputStream: FileOutputStream? = null
 
-                val contentLength = connection.contentLength
-                val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                    ?: context.cacheDir
-                val apkFile = File(downloadDir, fileName)
-                if (apkFile.exists()) {
-                    apkFile.delete()
-                }
-
-                inputStream = connection.inputStream
-                outputStream = FileOutputStream(apkFile)
-
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                var totalBytes: Long = 0
-
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    outputStream.write(buffer, 0, bytesRead)
-                    totalBytes += bytesRead
-                    if (contentLength > 0) {
-                        val progress = ((totalBytes * 100) / contentLength).toInt().coerceIn(0, 100)
-                        _downloadStatus.value = DownloadStatus.Downloading(progress)
-                    }
-                }
-                outputStream.flush()
-
-                _downloadStatus.value = DownloadStatus.Completed(apkFile.absolutePath)
-            } catch (e: Exception) {
-                Log.e(TAG, "Download APK failed", e)
-                _downloadStatus.value = DownloadStatus.Failed("下载中断: ${e.message}")
-            } finally {
                 try {
-                    outputStream?.close()
-                    inputStream?.close()
-                    connection?.disconnect()
+                    var currentUrl = candidateUrl
+                    var redirectCount = 0
+                    while (redirectCount < 6) {
+                        val url = URL(currentUrl)
+                        connection = (url.openConnection() as HttpURLConnection).apply {
+                            instanceFollowRedirects = false
+                            connectTimeout = 8000
+                            readTimeout = 15000
+                            setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) iGames-App")
+                        }
+                        val code = connection.responseCode
+                        if (code == HttpURLConnection.HTTP_MOVED_TEMP ||
+                            code == HttpURLConnection.HTTP_MOVED_PERM ||
+                            code == 307 || code == 308) {
+                            currentUrl = connection.getHeaderField("Location")
+                            connection.disconnect()
+                            redirectCount++
+                        } else {
+                            break
+                        }
+                    }
+
+                    if (connection?.responseCode != HttpURLConnection.HTTP_OK) {
+                        Log.w(TAG, "Route returned non-200 code: ${connection?.responseCode}, trying next...")
+                        continue
+                    }
+
+                    val contentLength = connection.contentLength
+                    val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                        ?: context.cacheDir
+                    val apkFile = File(downloadDir, fileName)
+                    if (apkFile.exists()) {
+                        apkFile.delete()
+                    }
+
+                    inputStream = connection.inputStream
+                    outputStream = FileOutputStream(apkFile)
+
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    var totalBytes: Long = 0
+
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                        totalBytes += bytesRead
+                        if (contentLength > 0) {
+                            val progress = ((totalBytes * 100) / contentLength).toInt().coerceIn(0, 100)
+                            _downloadStatus.value = DownloadStatus.Downloading(progress)
+                        }
+                    }
+                    outputStream.flush()
+
+                    if (apkFile.length() > 500_000) { // Ensure file isn't an error HTML page
+                        _downloadStatus.value = DownloadStatus.Completed(apkFile.absolutePath)
+                        downloadSuccess = true
+                        break
+                    } else {
+                        Log.w(TAG, "Downloaded file too small (${apkFile.length()} bytes), likely an error page. Trying next...")
+                    }
                 } catch (e: Exception) {
-                    // ignore
+                    Log.w(TAG, "Route failed: $candidateUrl, ${e.message}")
+                    finalErrorMessage = e.message
+                } finally {
+                    try {
+                        outputStream?.close()
+                        inputStream?.close()
+                        connection?.disconnect()
+                    } catch (e: Exception) {
+                        // ignore
+                    }
                 }
+            }
+
+            if (!downloadSuccess) {
+                _downloadStatus.value = DownloadStatus.Failed("所有加速通道均下载失败，请检查网络或切换代理 ($finalErrorMessage)")
             }
         }
     }
@@ -233,7 +305,6 @@ class UpdateManager(
         }
 
         try {
-            // Check unknown sources installation permission on Android 8.0+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val hasInstallPermission = context.packageManager.canRequestPackageInstalls()
                 if (!hasInstallPermission) {
