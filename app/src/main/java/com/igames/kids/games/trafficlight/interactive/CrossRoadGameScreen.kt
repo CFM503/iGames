@@ -56,6 +56,7 @@ import com.igames.kids.core.audio.SoundManager
 import com.igames.kids.core.components.TopKidBar
 import com.igames.kids.core.theme.KidAmber
 import com.igames.kids.core.theme.KidAppleGreen
+import com.igames.kids.core.theme.KidDeepGreen
 import com.igames.kids.core.theme.KidBackground
 import com.igames.kids.core.theme.KidCandyRed
 import com.igames.kids.core.theme.KidDeepBlue
