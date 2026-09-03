@@ -87,6 +87,11 @@ fun CrossRoadGameScreen(
     val activity = context as? Activity
     val coroutineScope = rememberCoroutineScope()
 
+    var starCount by remember { mutableIntStateOf(0) }
+    var carProgress by remember { mutableFloatStateOf(0.05f) } // 0.05f (start) to 0.90f (finish)
+    var isHoldingGas by remember { mutableStateOf(false) }
+    var alertMessage by remember { mutableStateOf<String?>("小朋友，红灯亮啦，快快停下来！做个遵守规则的好宝宝！") }
+
     val controller = remember {
         TrafficLightController(
             scope = coroutineScope,
@@ -128,11 +133,6 @@ fun CrossRoadGameScreen(
     val state by controller.currentState.collectAsState()
     val remainingSec by controller.remainingSeconds.collectAsState()
     val isBlinkPhaseVisible by controller.isBlinkPhaseVisible.collectAsState()
-
-    var starCount by remember { mutableIntStateOf(0) }
-    var carProgress by remember { mutableFloatStateOf(0.05f) } // 0.05f (start) to 0.90f (finish)
-    var isHoldingGas by remember { mutableStateOf(false) }
-    var alertMessage by remember { mutableStateOf<String?>("小朋友，红灯亮啦，快快停下来！做个遵守规则的好宝宝！") }
 
     // Driving physics loop
     LaunchedEffect(Unit) {
