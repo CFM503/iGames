@@ -2,6 +2,7 @@ package com.igames.kids.games.trafficlight.engine
 
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
 import com.igames.kids.games.trafficlight.model.TrafficLightState
+import com.igames.kids.games.trafficlight.model.TrafficLightStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,6 +21,13 @@ class TrafficLightController(
     var config: TrafficLightConfig = initialConfig
         set(value) {
             field = value
+            // If switched to pedestrian mode while in yellow, immediately switch to red
+            if (value.style == TrafficLightStyle.PEDESTRIAN && _currentState.value == TrafficLightState.YELLOW) {
+                _currentState.value = TrafficLightState.RED
+                _remainingSeconds.value = value.redDuration
+                onStateChanged?.invoke(TrafficLightState.RED)
+                return
+            }
             // If current remaining exceeds new duration, clamp it
             val maxCurrent = when (_currentState.value) {
                 TrafficLightState.RED -> value.redDuration
@@ -31,10 +39,11 @@ class TrafficLightController(
             }
         }
 
-    private val _currentState = MutableStateFlow(TrafficLightState.GREEN)
+    // Always start with RED light
+    private val _currentState = MutableStateFlow(TrafficLightState.RED)
     val currentState: StateFlow<TrafficLightState> = _currentState.asStateFlow()
 
-    private val _remainingSeconds = MutableStateFlow(initialConfig.greenDuration)
+    private val _remainingSeconds = MutableStateFlow(initialConfig.redDuration)
     val remainingSeconds: StateFlow<Int> = _remainingSeconds.asStateFlow()
 
     private val _isBlinkPhaseVisible = MutableStateFlow(true)
@@ -51,6 +60,8 @@ class TrafficLightController(
     fun start() {
         if (loopJob?.isActive == true) return
         _isPaused.value = false
+        // Trigger initial state broadcast so voice alert plays immediately on start!
+        onStateChanged?.invoke(_currentState.value)
         loopJob = scope.launch {
             runLoop()
         }
@@ -117,11 +128,21 @@ class TrafficLightController(
     }
 
     private fun transitionToNextState() {
+        val isPedestrian = (config.style == TrafficLightStyle.PEDESTRIAN)
+
         when (_currentState.value) {
             TrafficLightState.GREEN, TrafficLightState.GREEN_BLINK -> {
-                _currentState.value = TrafficLightState.YELLOW
-                _remainingSeconds.value = config.yellowDuration
-                onStateChanged?.invoke(TrafficLightState.YELLOW)
+                if (isPedestrian) {
+                    // Pedestrian mode has no yellow light: transitions directly Green -> Red
+                    _currentState.value = TrafficLightState.RED
+                    _remainingSeconds.value = config.redDuration
+                    onStateChanged?.invoke(TrafficLightState.RED)
+                } else {
+                    // Motor vehicle mode: transitions Green -> Yellow -> Red
+                    _currentState.value = TrafficLightState.YELLOW
+                    _remainingSeconds.value = config.yellowDuration
+                    onStateChanged?.invoke(TrafficLightState.YELLOW)
+                }
             }
             TrafficLightState.YELLOW -> {
                 _currentState.value = TrafficLightState.RED
@@ -129,6 +150,7 @@ class TrafficLightController(
                 onStateChanged?.invoke(TrafficLightState.RED)
             }
             TrafficLightState.RED -> {
+                // Red -> Green (both vehicle and pedestrian modes go directly Red -> Green)
                 _currentState.value = TrafficLightState.GREEN
                 _remainingSeconds.value = config.greenDuration
                 onStateChanged?.invoke(TrafficLightState.GREEN)

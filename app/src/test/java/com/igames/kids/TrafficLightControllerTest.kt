@@ -12,13 +12,14 @@ class TrafficLightControllerTest {
     @Test
     fun testDefaultConfig() {
         val config = TrafficLightConfig()
-        assertEquals(10, config.redDuration)
+        assertEquals(30, config.redDuration)
         assertEquals(3, config.yellowDuration)
-        assertEquals(10, config.greenDuration)
+        assertEquals(30, config.greenDuration)
         assertEquals(TrafficLightStyle.CLASSIC_3_LAMP, config.style)
         assertTrue(config.isSoundEnabled)
         assertTrue(config.isVoiceEnabled)
-        assertEquals(23, config.totalCycleDuration)
+        assertEquals(false, config.isTickSoundEnabled)
+        assertEquals(63, config.totalCycleDuration)
     }
 
     @Test

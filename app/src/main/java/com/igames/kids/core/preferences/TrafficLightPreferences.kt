@@ -30,9 +30,9 @@ class TrafficLightPreferences(private val context: Context) {
     }
 
     val configFlow: Flow<TrafficLightConfig> = context.dataStore.data.map { prefs ->
-        val redSec = prefs[KEY_RED_SECONDS] ?: 10
+        val redSec = prefs[KEY_RED_SECONDS] ?: 30
         val yellowSec = prefs[KEY_YELLOW_SECONDS] ?: 3
-        val greenSec = prefs[KEY_GREEN_SECONDS] ?: 10
+        val greenSec = prefs[KEY_GREEN_SECONDS] ?: 30
         val styleName = prefs[KEY_STYLE] ?: TrafficLightStyle.CLASSIC_3_LAMP.name
         val style = try {
             TrafficLightStyle.valueOf(styleName)
@@ -42,7 +42,7 @@ class TrafficLightPreferences(private val context: Context) {
         val sound = prefs[KEY_SOUND_ENABLED] ?: true
         val voice = prefs[KEY_VOICE_ENABLED] ?: true
         val blinkGreen = prefs[KEY_BLINK_GREEN] ?: true
-        val tickSound = prefs[KEY_TICK_SOUND] ?: true
+        val tickSound = prefs[KEY_TICK_SOUND] ?: false
 
         TrafficLightConfig(
             redDuration = redSec,

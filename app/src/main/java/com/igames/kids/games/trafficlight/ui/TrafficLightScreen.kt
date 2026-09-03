@@ -69,6 +69,9 @@ import com.igames.kids.games.trafficlight.ui.components.DigitalCountdownView
 import com.igames.kids.games.trafficlight.ui.components.PedestrianLightView
 import com.igames.kids.games.trafficlight.ui.components.TrafficLightHousing
 
+import com.igames.kids.core.sensor.MotionScreenAwakeManager
+import com.igames.kids.core.util.SystemUIHelper
+
 @Composable
 fun TrafficLightScreen(
     soundManager: SoundManager,
@@ -81,12 +84,14 @@ fun TrafficLightScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Keep screen awake while simulation is active
+    // Full screen immersive and intelligent motion awake management
     DisposableEffect(Unit) {
         val activity = context as? Activity
-        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        SystemUIHelper.enterFullScreen(activity)
+        val motionAwakeManager = activity?.let { MotionScreenAwakeManager(it) }
+        motionAwakeManager?.start()
         onDispose {
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            motionAwakeManager?.stop()
         }
     }
 
@@ -325,25 +330,29 @@ fun TrafficLightScreen(
                         .clickable {
                             soundManager.playButtonTap()
                             controller.setManualState(TrafficLightState.RED)
+                            soundManager.playManualPoliceSpeech("红")
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("红", color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp)
                 }
-                // Yellow Button
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .shadow(4.dp, CircleShape)
-                        .background(LampYellowOn, CircleShape)
-                        .clip(CircleShape)
-                        .clickable {
-                            soundManager.playButtonTap()
-                            controller.setManualState(TrafficLightState.YELLOW)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("黄", color = Color(0xFF3E2723), fontWeight = FontWeight.Black, fontSize = 16.sp)
+                // Yellow Button (only shown in vehicle modes, pedestrian mode has no yellow light)
+                if (currentConfig.style != TrafficLightStyle.PEDESTRIAN) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .shadow(4.dp, CircleShape)
+                            .background(LampYellowOn, CircleShape)
+                            .clip(CircleShape)
+                            .clickable {
+                                soundManager.playButtonTap()
+                                controller.setManualState(TrafficLightState.YELLOW)
+                                soundManager.playManualPoliceSpeech("黄")
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("黄", color = Color(0xFF3E2723), fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    }
                 }
                 // Green Button
                 Box(
@@ -355,6 +364,7 @@ fun TrafficLightScreen(
                         .clickable {
                             soundManager.playButtonTap()
                             controller.setManualState(TrafficLightState.GREEN)
+                            soundManager.playManualPoliceSpeech("绿")
                         },
                     contentAlignment = Alignment.Center
                 ) {

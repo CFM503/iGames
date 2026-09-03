@@ -27,6 +27,7 @@ import com.igames.kids.games.trafficlight.settings.TrafficLightSettingsScreen
 import com.igames.kids.games.trafficlight.ui.TrafficLightScreen
 import com.igames.kids.navigation.HubScreen
 import com.igames.kids.navigation.Screen
+import com.igames.kids.core.util.SystemUIHelper
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -36,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        SystemUIHelper.enterFullScreen(this)
 
         soundManager = SoundManager(this)
         updateManager = UpdateManager(this)
@@ -143,6 +144,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            SystemUIHelper.enterFullScreen(this)
         }
     }
 

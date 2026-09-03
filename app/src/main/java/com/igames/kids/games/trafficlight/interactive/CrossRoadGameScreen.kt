@@ -72,12 +72,19 @@ import com.igames.kids.games.trafficlight.ui.components.ClassicLightView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
+import com.igames.kids.core.sensor.MotionScreenAwakeManager
+import com.igames.kids.core.util.SystemUIHelper
+
 @Composable
 fun CrossRoadGameScreen(
     soundManager: SoundManager,
     config: TrafficLightConfig,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
     val coroutineScope = rememberCoroutineScope()
 
     val controller = remember {
@@ -86,18 +93,36 @@ fun CrossRoadGameScreen(
             initialConfig = config,
             onStateChanged = { state ->
                 when (state) {
-                    TrafficLightState.GREEN -> soundManager.playGreenAlert()
-                    TrafficLightState.YELLOW -> soundManager.playYellowAlert()
-                    TrafficLightState.RED -> soundManager.playRedAlert()
-                    TrafficLightState.GREEN_BLINK -> soundManager.playTick()
+                    TrafficLightState.GREEN -> {
+                        alertMessage = "绿灯亮啦！小朋友，先左右看一看，确认没有车，再安全通行哦！"
+                        soundManager.playGreenAlert()
+                    }
+                    TrafficLightState.YELLOW -> {
+                        alertMessage = "黄灯亮啦，等一等，千万不要着急哦！"
+                        soundManager.playYellowAlert()
+                    }
+                    TrafficLightState.RED -> {
+                        alertMessage = "小朋友，红灯亮啦，快快停下来！做个遵守规则的好宝宝！"
+                        soundManager.playRedAlert()
+                    }
+                    TrafficLightState.GREEN_BLINK -> {
+                        alertMessage = "绿灯眨眼睛啦，抓紧时间安全过马路！"
+                        soundManager.playTick()
+                    }
                 }
             }
         )
     }
 
     DisposableEffect(Unit) {
+        SystemUIHelper.enterFullScreen(activity)
+        val motionAwakeManager = activity?.let { MotionScreenAwakeManager(it) }
+        motionAwakeManager?.start()
         controller.start()
-        onDispose { controller.stop() }
+        onDispose {
+            motionAwakeManager?.stop()
+            controller.stop()
+        }
     }
 
     val state by controller.currentState.collectAsState()
@@ -107,7 +132,7 @@ fun CrossRoadGameScreen(
     var starCount by remember { mutableIntStateOf(0) }
     var carProgress by remember { mutableFloatStateOf(0.05f) } // 0.05f (start) to 0.90f (finish)
     var isHoldingGas by remember { mutableStateOf(false) }
-    var alertMessage by remember { mutableStateOf<String?>("绿灯亮，左右看一看，确认没车再通行！") }
+    var alertMessage by remember { mutableStateOf<String?>("小朋友，红灯亮啦，快快停下来！做个遵守规则的好宝宝！") }
 
     // Driving physics loop
     LaunchedEffect(Unit) {
