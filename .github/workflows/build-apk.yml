@@ -44,16 +44,19 @@ jobs:
 
       - name: Build Debug & Release APK
         run: |
-          gradle assembleRelease assembleDebug --stacktrace 2>&1 | tee gradle-build.log || {
-            echo "## ❌ Gradle Build Error Summary" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            grep -C 5 -E "(FAILURE:|e: |Error:|Exception)" gradle-build.log | head -n 80 >> $GITHUB_STEP_SUMMARY || tail -n 80 gradle-build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          }
+          set -o pipefail
+          gradle assembleRelease assembleDebug --stacktrace 2>&1 | tee gradle-build.log
 
-      - name: Upload Build Log on Failure
+      - name: Print Gradle Errors on Failure
         if: failure()
+        run: |
+          echo "## ❌ Gradle Build Error Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          tail -n 80 gradle-build.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Build Log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-build-log
@@ -62,10 +65,11 @@ jobs:
       - name: Organize APK Files
         run: |
           mkdir -p build-apks
-          # Find generated APKs and copy with friendly names
-          find app/build/outputs/apk/ -name "*.apk" -type f
-          cp app/build/outputs/apk/release/*.apk build-apks/iGames-release.apk || true
-          cp app/build/outputs/apk/debug/*.apk build-apks/iGames-debug.apk || true
+          if [ -d app/build/outputs/apk ]; then
+            find app/build/outputs/apk/ -name "*.apk" -type f
+            find app/build/outputs/apk/release -name "*.apk" -exec cp {} build-apks/iGames-release.apk \; || true
+            find app/build/outputs/apk/debug -name "*.apk" -exec cp {} build-apks/iGames-debug.apk \; || true
+          fi
           ls -la build-apks/
 
       - name: Upload APKs as Artifacts
