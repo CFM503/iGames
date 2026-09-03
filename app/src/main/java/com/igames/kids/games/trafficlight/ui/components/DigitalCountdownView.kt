@@ -130,7 +130,7 @@ fun DigitalCountdownView(
 
             // Digital Number Display
             Text(
-                text = String.format("%02d", remainingSeconds),
+                text = String.format(java.util.Locale.US, "%02d", remainingSeconds),
                 fontSize = (size.value * 0.36f).sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Black,

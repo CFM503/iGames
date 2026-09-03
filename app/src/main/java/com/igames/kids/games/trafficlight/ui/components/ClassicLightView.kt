@@ -205,7 +205,12 @@ fun TrafficLamp(
                         listOf(
                             Color.White.copy(alpha = 0.85f),
                             lensColor,
-                            lensColor.copy(red = lensColor.red * 0.7f, green = lensColor.green * 0.7f, blue = lensColor.blue * 0.7f)
+                            Color(
+                                red = lensColor.red * 0.7f,
+                                green = lensColor.green * 0.7f,
+                                blue = lensColor.blue * 0.7f,
+                                alpha = lensColor.alpha
+                            )
                         )
                     } else {
                         listOf(
