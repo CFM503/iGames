@@ -1,6 +1,7 @@
 # 🎮 iGames 儿童习惯乐园（日常生活规范化启蒙安卓游戏合集）
 
 [![Build & Release Android APK](https://github.com/CFM503/iGames/actions/workflows/build-apk.yml/badge.svg)](https://github.com/CFM503/iGames/actions/workflows/build-apk.yml)
+[![Latest Release](https://img.shields.io/badge/Release-v1.0.2-brightgreen.svg)](https://github.com/CFM503/iGames/releases/tag/v1.0.2)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)](https://developer.android.com/jetpack/compose)
@@ -20,11 +21,11 @@
 
 | 下载通道 | 快速下载链接 | 实测特性与适用网络 |
 | :--- | :--- | :--- |
-| 🚀 **极速通道 1（首选推荐）** | [⚡ 直接下载 iGames-release.apk (gh-proxy.com)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 **首选**：国内连接响应最快、稳定高带宽 |
-| 🚀 **极速通道 2（高带宽专线）** | [⚡ 备用下载 iGames-release.apk (ghfast.top)](https://ghfast.top/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 移动/联通/电信多线优化，大带宽极速直连 |
+| 🚀 **极速通道 1（推荐 v1.0.2）** | [⚡ 直接下载 iGames-v1.0.2.apk (gh-proxy.com)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/download/v1.0.2/iGames-release.apk) | 🇨🇳 **首选推荐**：国内直连响应最快、跑满宽带 |
+| 🚀 **极速通道 2（专线 v1.0.2）** | [⚡ 备用下载 iGames-v1.0.2.apk (ghfast.top)](https://ghfast.top/https://github.com/CFM503/iGames/releases/download/v1.0.2/iGames-release.apk) | 🇨🇳 移动/联通/电信多线优化，大带宽极速直连 |
 | 🌐 **全球 CDN 专线 (免代理)** | [🚀 全球 CDN 直链下载 (jsDelivr)](https://fastly.jsdelivr.net/gh/CFM503/iGames@apk/iGames-release.apk) | 🌏 全球亚太/国内边缘 CDN 节点直接发包 |
-| 🔄 **传统镜像通道 3** | [备用下载 (ghproxy.net)](https://ghproxy.net/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 传统稳定公共镜像兜底 |
-| 🌐 **GitHub 官方 Releases** | [前往 GitHub Release 官方页面](https://github.com/CFM503/iGames/releases/latest) | 🌍 海外网络环境或已开启科学上网 |
+| 🔄 **动态自动最新通道 (Latest)** | [⚡ 自动解析最新版 (gh-proxy.com)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 自动随版本发布重定向最新 Release |
+| 🌐 **GitHub 官方 Releases** | [前往 GitHub Release v1.0.2 页面](https://github.com/CFM503/iGames/releases/tag/v1.0.2) | 🌍 海外网络环境或已开启科学上网 |
 
 > [!NOTE]
 > **💡 想要国内 10MB/s~50MB/s 瞬时秒下？**
