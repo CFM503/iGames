@@ -4,6 +4,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)](https://developer.android.com/jetpack/compose)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0%20%2F%20Commercial-red.svg)](./LICENSE)
 
 **iGames** 是一款专为儿童早期生活规范与好习惯养成设计的轻量级原生 Android 游戏合集平台。采用模块化架构，界面采用大圆角、高饱和柔和护眼色彩与灵动的触控动效，引导孩子在快乐的微游戏中理解规则、学会自理。
 
@@ -93,7 +94,14 @@ git push origin v1.0.0
 ```
 GitHub Actions 会自动编译 Release APK，并挂载到 GitHub Release 页面，手机端的 iGames 即会检测到新版本并提示在线更新！
 
----
+## 📜 开源协议与商业授权声明 (License & Commercial Terms)
 
-## 📜 开源协议
-本项目基于 MIT License 开源，欢迎用于早教启蒙、家庭娱乐与拓展学习。
+本项目采用 **双重许可模式 (Dual Licensing Model)**，充分保护项目原作者的商业化权益：
+
+- **非商业用途 (免费)**：遵循 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) 国际许可协议。个人学习、家庭教育、学校教学等公益非商业场景完全免费开放源码。
+- **商业用途 (严格限制)**：**原作者独家保留所有商业权利**。严禁任何第三方在未经书面授权的情况下将本应用或其衍生版本用于以下行为：
+  1. 上架任何公开发行渠道（包括华为/小米/应用宝/OPPO/vivo/Google Play 等），并通过付费下载、内购充值、会员制或植入商业广告变现。
+  2. 预装、捆绑至早教机、学习平板、智能玩具等商业硬件设备销售。
+  3. 闭源换皮后作为独立商业产品销售。
+
+💼 **商业合作与商业授权洽谈**：如需商用授权、渠道合作、品牌定制或硬件预装，欢迎通过 GitHub 仓库主页或 Issue 联系原作者洽谈正式商业授权合同。详见完整的 [LICENSE](file:///d:/SOFT/AI/github/iGames/LICENSE) 协议文件。
