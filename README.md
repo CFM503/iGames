@@ -1,6 +1,6 @@
 # 🎮 iGames 儿童习惯乐园（日常生活规范化启蒙安卓游戏合集）
 
-[![Build & Release Android APK](https://github.com/USERNAME/iGames/actions/workflows/build-apk.yml/badge.svg)](https://github.com/USERNAME/iGames/actions/workflows/build-apk.yml)
+[![Build & Release Android APK](https://github.com/CFM503/iGames/actions/workflows/build-apk.yml/badge.svg)](https://github.com/CFM503/iGames/actions/workflows/build-apk.yml)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Kotlin-purple.svg)](https://kotlinlang.org/)
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)](https://developer.android.com/jetpack/compose)
@@ -19,11 +19,9 @@
 
 | 下载通道 | 快速下载链接 | 适用网络环境 |
 | :--- | :--- | :--- |
-| 🚀 **国内高速镜像 1（推荐）** | [直接下载 iGames-release.apk (镜像1)](https://ghproxy.net/https://github.com/USERNAME/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 国内电信/联通/移动宽带极速直连 |
-| ⚡ **国内高速镜像 2（备用）** | [备用下载 iGames-release.apk (镜像2)](https://gh-proxy.com/https://github.com/USERNAME/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 镜像1网络波动时备选 |
-| 🌐 **GitHub 官方 Releases** | [前往 GitHub Release 官方页面](https://github.com/USERNAME/iGames/releases/latest) | 🌍 海外网络环境或已开启科学上网 |
-
-> 💡 *小提示：克隆或 Fork 本仓库后，只需将上面链接中的 `USERNAME` 替换为您自己的 GitHub 账号名称即可。*
+| 🚀 **国内高速镜像 1（推荐）** | [直接下载 iGames-release.apk (镜像1)](https://ghproxy.net/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 国内电信/联通/移动宽带极速直连 |
+| ⚡ **国内高速镜像 2（备用）** | [备用下载 iGames-release.apk (镜像2)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 镜像1网络波动时备选 |
+| 🌐 **GitHub 官方 Releases** | [前往 GitHub Release 官方页面](https://github.com/CFM503/iGames/releases/latest) | 🌍 海外网络环境或已开启科学上网 |
 
 ---
 

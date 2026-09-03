@@ -22,7 +22,7 @@ import java.net.URL
 
 class UpdateManager(
     private val context: Context,
-    var repoOwner: String = "pzeus",
+    var repoOwner: String = "CFM503",
     var repoName: String = "iGames"
 ) {
     companion object {
