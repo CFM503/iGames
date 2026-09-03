@@ -21,21 +21,26 @@ android {
     }
 
     signingConfigs {
-        getByName("debug")
+        create("release") {
+            storeFile = file("release.keystore")
+            storePassword = "igames123"
+            keyAlias = "igames"
+            keyPassword = "igames123"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
         debug {
-            applicationIdSuffix = ".debug"
-            isDebuggable = true
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
