@@ -123,7 +123,7 @@ fun CrossRoadGameScreen(
         SystemUIHelper.enterFullScreen(activity)
         val motionAwakeManager = activity?.let { MotionScreenAwakeManager(it) }
         motionAwakeManager?.start()
-        controller.start()
+        controller.start(forceRed = true)
         onDispose {
             motionAwakeManager?.stop()
             controller.stop()

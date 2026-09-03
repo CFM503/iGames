@@ -1,16 +1,19 @@
-package com.igames.kids.core.components
+﻿package com.igames.kids.core.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -31,6 +34,7 @@ fun TopKidBar(
     title: String,
     onBackClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)? = null,
+    onMaximizeClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -68,25 +72,49 @@ fun TopKidBar(
             color = KidDeepBlue
         )
 
-        if (onSettingsClick != null) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .shadow(4.dp, CircleShape)
-                    .background(Color.White, CircleShape)
-                    .clip(CircleShape)
-                    .clickable { onSettingsClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "家长设置",
-                    tint = KidSkyBlue,
-                    modifier = Modifier.size(28.dp)
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onMaximizeClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(Color.White, CircleShape)
+                        .clip(CircleShape)
+                        .clickable { onMaximizeClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "全屏最大化",
+                        tint = KidSkyBlue,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                if (onSettingsClick != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
             }
-        } else {
-            Box(modifier = Modifier.size(48.dp))
+
+            if (onSettingsClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(Color.White, CircleShape)
+                        .clip(CircleShape)
+                        .clickable { onSettingsClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "家长设置",
+                        tint = KidSkyBlue,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            } else if (onMaximizeClick == null) {
+                Box(modifier = Modifier.size(48.dp))
+            }
         }
     }
 }

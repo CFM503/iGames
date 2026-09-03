@@ -57,14 +57,33 @@ class TrafficLightController(
 
     private var loopJob: Job? = null
 
-    fun start() {
-        if (loopJob?.isActive == true) return
+    fun start(forceRed: Boolean = true) {
+        if (loopJob?.isActive == true) {
+            if (forceRed) {
+                resetToRed()
+            }
+            return
+        }
         _isPaused.value = false
+        if (forceRed) {
+            _isManualMode.value = false
+            _currentState.value = TrafficLightState.RED
+            _remainingSeconds.value = config.redDuration
+            _isBlinkPhaseVisible.value = true
+        }
         // Trigger initial state broadcast so voice alert plays immediately on start!
         onStateChanged?.invoke(_currentState.value)
         loopJob = scope.launch {
             runLoop()
         }
+    }
+
+    fun resetToRed() {
+        _isManualMode.value = false
+        _currentState.value = TrafficLightState.RED
+        _remainingSeconds.value = config.redDuration
+        _isBlinkPhaseVisible.value = true
+        onStateChanged?.invoke(TrafficLightState.RED)
     }
 
     fun togglePause() {
@@ -80,6 +99,39 @@ class TrafficLightController(
             TrafficLightState.GREEN, TrafficLightState.GREEN_BLINK -> config.greenDuration
         }
         onStateChanged?.invoke(state)
+    }
+
+    /**
+     * Cycles to the next light in manual mode upon screen click:
+     * - In pedestrian mode: RED <-> GREEN (no yellow light)
+     * - In vehicle mode: RED -> GREEN -> YELLOW -> RED
+     */
+    fun cycleNextManualState() {
+        _isManualMode.value = true
+        val nextState = when (config.style) {
+            TrafficLightStyle.PEDESTRIAN -> {
+                if (_currentState.value == TrafficLightState.RED) {
+                    TrafficLightState.GREEN
+                } else {
+                    TrafficLightState.RED
+                }
+            }
+            else -> {
+                when (_currentState.value) {
+                    TrafficLightState.RED -> TrafficLightState.GREEN
+                    TrafficLightState.GREEN, TrafficLightState.GREEN_BLINK -> TrafficLightState.YELLOW
+                    TrafficLightState.YELLOW -> TrafficLightState.RED
+                }
+            }
+        }
+        _currentState.value = nextState
+        _remainingSeconds.value = when (nextState) {
+            TrafficLightState.RED -> config.redDuration
+            TrafficLightState.YELLOW -> config.yellowDuration
+            TrafficLightState.GREEN, TrafficLightState.GREEN_BLINK -> config.greenDuration
+        }
+        _isBlinkPhaseVisible.value = true
+        onStateChanged?.invoke(nextState)
     }
 
     fun switchToAutoMode() {

@@ -42,4 +42,57 @@ class TrafficLightControllerTest {
         val greenBlink = TrafficLightState.GREEN_BLINK
         assertTrue(greenBlink.isGreen)
     }
+
+    @Test
+    fun testCycleNextManualStateVehicle() {
+        val config = TrafficLightConfig(style = TrafficLightStyle.CLASSIC_3_LAMP)
+        val controller = com.igames.kids.games.trafficlight.engine.TrafficLightController(
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined),
+            initialConfig = config
+        )
+
+        // Starts on RED
+        assertEquals(TrafficLightState.RED, controller.currentState.value)
+
+        // Click screen 1: Red -> Green
+        controller.cycleNextManualState()
+        assertTrue(controller.isManualMode.value)
+        assertEquals(TrafficLightState.GREEN, controller.currentState.value)
+        assertEquals(30, controller.remainingSeconds.value)
+
+        // Click screen 2: Green -> Yellow
+        controller.cycleNextManualState()
+        assertEquals(TrafficLightState.YELLOW, controller.currentState.value)
+        assertEquals(3, controller.remainingSeconds.value)
+
+        // Click screen 3: Yellow -> Red
+        controller.cycleNextManualState()
+        assertEquals(TrafficLightState.RED, controller.currentState.value)
+        assertEquals(30, controller.remainingSeconds.value)
+
+        // Restore auto mode
+        controller.switchToAutoMode()
+        assertEquals(false, controller.isManualMode.value)
+    }
+
+    @Test
+    fun testCycleNextManualStatePedestrian() {
+        val config = TrafficLightConfig(style = TrafficLightStyle.PEDESTRIAN)
+        val controller = com.igames.kids.games.trafficlight.engine.TrafficLightController(
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined),
+            initialConfig = config
+        )
+
+        // Starts on RED
+        assertEquals(TrafficLightState.RED, controller.currentState.value)
+
+        // Click screen 1: Red -> Green (no yellow)
+        controller.cycleNextManualState()
+        assertTrue(controller.isManualMode.value)
+        assertEquals(TrafficLightState.GREEN, controller.currentState.value)
+
+        // Click screen 2: Green -> Red (no yellow)
+        controller.cycleNextManualState()
+        assertEquals(TrafficLightState.RED, controller.currentState.value)
+    }
 }
