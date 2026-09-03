@@ -20,10 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -31,15 +34,16 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,16 +60,21 @@ import com.igames.kids.core.theme.KidSkyBlue
 import com.igames.kids.core.theme.LampGreenOn
 import com.igames.kids.core.theme.LampRedOn
 import com.igames.kids.core.theme.LampYellowOn
+import com.igames.kids.core.update.UpdateDialog
+import com.igames.kids.core.update.UpdateManager
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
 import com.igames.kids.games.trafficlight.model.TrafficLightStyle
+import kotlinx.coroutines.launch
 
 @Composable
 fun TrafficLightSettingsScreen(
     currentConfig: TrafficLightConfig,
     soundManager: SoundManager,
+    updateManager: UpdateManager,
     onSaveConfig: (TrafficLightConfig) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var redDuration by remember { mutableIntStateOf(currentConfig.redDuration) }
     var yellowDuration by remember { mutableIntStateOf(currentConfig.yellowDuration) }
     var greenDuration by remember { mutableIntStateOf(currentConfig.greenDuration) }
@@ -74,6 +83,9 @@ fun TrafficLightSettingsScreen(
     var isSoundEnabled by remember { mutableStateOf(currentConfig.isSoundEnabled) }
     var isGreenBlinkEnabled by remember { mutableStateOf(currentConfig.isGreenBlinkEnabled) }
     var isTickSoundEnabled by remember { mutableStateOf(currentConfig.isTickSoundEnabled) }
+
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    val updateInfo by updateManager.updateInfo.collectAsState()
 
     Column(
         modifier = Modifier
@@ -110,7 +122,6 @@ fun TrafficLightSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Green Duration
                     DurationStepper(
                         label = "绿灯通行时长",
                         value = greenDuration,
@@ -122,7 +133,6 @@ fun TrafficLightSettingsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Yellow Duration
                     DurationStepper(
                         label = "黄灯等待时长",
                         value = yellowDuration,
@@ -134,7 +144,6 @@ fun TrafficLightSettingsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Red Duration
                     DurationStepper(
                         label = "红灯停止时长",
                         value = redDuration,
@@ -262,7 +271,107 @@ fun TrafficLightSettingsScreen(
                 }
             }
 
-            // Reset Button
+            // Card 4: Online Updates & Version Info
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "🚀 版本与在线更新",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = KidDeepBlue
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "当前版本: v${UpdateManager.CURRENT_VERSION_NAME}",
+                                fontSize = 13.sp,
+                                color = Color.Gray
+                            )
+                        }
+
+                        if (updateInfo.isChecking) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 3.dp,
+                                color = KidSkyBlue
+                            )
+                        } else {
+                            CuteButton(
+                                onClick = {
+                                    soundManager.playButtonTap()
+                                    coroutineScope.launch {
+                                        updateManager.checkForUpdates(isManualCheck = true)
+                                    }
+                                },
+                                backgroundColor = KidSkyBlue,
+                                cornerRadius = 16.dp,
+                                elevation = 2.dp
+                            ) {
+                                Icon(imageVector = Icons.Default.CloudSync, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("检查更新", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    if (updateInfo.hasUpdate) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(KidAppleGreen.copy(alpha = 0.12f))
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "发现新版本 v${updateInfo.latestVersionName}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = KidAppleGreen
+                                )
+                                Text(
+                                    text = "包含更多日常生活规范小游戏",
+                                    fontSize = 12.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                            CuteButton(
+                                onClick = {
+                                    soundManager.playButtonTap()
+                                    showUpdateDialog = true
+                                },
+                                backgroundColor = KidAppleGreen,
+                                cornerRadius = 14.dp,
+                                elevation = 2.dp
+                            ) {
+                                Text("立即更新", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else if (updateInfo.errorMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = updateInfo.errorMessage ?: "",
+                            fontSize = 13.sp,
+                            color = if (updateInfo.errorMessage?.contains("最新版本") == true) KidAppleGreen else KidCandyRed,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            // Reset Defaults Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -330,6 +439,13 @@ fun TrafficLightSettingsScreen(
                 )
             }
         }
+    }
+
+    if (showUpdateDialog) {
+        UpdateDialog(
+            updateManager = updateManager,
+            onDismiss = { showUpdateDialog = false }
+        )
     }
 }
 

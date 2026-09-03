@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -18,6 +19,7 @@ import com.igames.kids.core.audio.SoundManager
 import com.igames.kids.core.preferences.TrafficLightPreferences
 import com.igames.kids.core.theme.IGamesTheme
 import com.igames.kids.core.theme.KidBackground
+import com.igames.kids.core.update.UpdateManager
 import com.igames.kids.games.trafficlight.interactive.CrossRoadGameScreen
 import com.igames.kids.games.trafficlight.model.TrafficLightConfig
 import com.igames.kids.games.trafficlight.settings.TrafficLightSettingsScreen
@@ -29,12 +31,14 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private lateinit var soundManager: SoundManager
+    private lateinit var updateManager: UpdateManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         soundManager = SoundManager(this)
+        updateManager = UpdateManager(this)
         val preferences = TrafficLightPreferences(this)
 
         setContent {
@@ -47,6 +51,11 @@ class MainActivity : ComponentActivity() {
                     val coroutineScope = rememberCoroutineScope()
                     val config by preferences.configFlow.collectAsState(initial = TrafficLightConfig())
 
+                    // Silently check for GitHub Release updates on startup
+                    LaunchedEffect(Unit) {
+                        updateManager.checkForUpdates(isManualCheck = false)
+                    }
+
                     NavHost(
                         navController = navController,
                         startDestination = Screen.Hub.route
@@ -55,6 +64,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Hub.route) {
                             HubScreen(
                                 soundManager = soundManager,
+                                updateManager = updateManager,
                                 onOpenTrafficLight = {
                                     navController.navigate(Screen.TrafficLightSim.route)
                                 },
@@ -102,6 +112,7 @@ class MainActivity : ComponentActivity() {
                             TrafficLightSettingsScreen(
                                 currentConfig = config,
                                 soundManager = soundManager,
+                                updateManager = updateManager,
                                 onSaveConfig = { newConfig ->
                                     coroutineScope.launch {
                                         preferences.updateConfig(newConfig)

@@ -24,20 +24,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.FilterDrama
-import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Sanitizer
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Toys
 import androidx.compose.material.icons.filled.Traffic
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,14 +69,28 @@ import com.igames.kids.core.theme.KidPurple
 import com.igames.kids.core.theme.KidSkyBlue
 import com.igames.kids.core.theme.KidSoftOrange
 import com.igames.kids.core.theme.KidSunYellow
+import com.igames.kids.core.update.UpdateDialog
+import com.igames.kids.core.update.UpdateManager
+
+enum class HabitCategory(val title: String) {
+    ALL("全部规范"),
+    SAFETY("安全规则"),
+    HYGIENE("自理卫生"),
+    MANNERS("习惯礼仪")
+}
 
 @Composable
 fun HubScreen(
     soundManager: SoundManager,
+    updateManager: UpdateManager,
     onOpenTrafficLight: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     var showParentalGate by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf(HabitCategory.ALL) }
+
+    val updateInfo by updateManager.updateInfo.collectAsState()
 
     val infiniteTransition = rememberInfiniteTransition(label = "sunBounce")
     val sunScale by infiniteTransition.animateFloat(
@@ -118,24 +138,24 @@ fun HubScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "iGames 启蒙乐园",
+                        text = "iGames 习惯乐园",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Black,
                         color = KidDeepBlue
                     )
                     Text(
-                        text = "快乐探索 · 趣味启蒙",
-                        fontSize = 13.sp,
+                        text = "日常生活规范 · 趣味好习惯启蒙",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.Gray
                     )
                 }
             }
 
-            // Parental settings button
+            // Parental settings button (with red dot badge if update available)
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .shadow(3.dp, CircleShape)
                     .background(Color.White, CircleShape)
                     .clip(CircleShape)
@@ -149,76 +169,208 @@ fun HubScreen(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "设置",
                     tint = KidSkyBlue,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
+                )
+                if (updateInfo.hasUpdate) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .align(Alignment.TopEnd)
+                            .background(KidCandyRed, CircleShape)
+                    )
+                }
+            }
+        }
+
+        // Online Update Notification Card Banner
+        if (updateInfo.hasUpdate) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                    .clickable {
+                        soundManager.playButtonTap()
+                        showUpdateDialog = true
+                    },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = KidAppleGreen),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.RocketLaunch, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "🚀 发现新版本 v${updateInfo.latestVersionName}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "包含全新日常生活规范小游戏，点击升级！",
+                                fontSize = 11.sp,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(text = "立即更新", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KidAppleGreen)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Category Filter Chips
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            HabitCategory.entries.forEach { category ->
+                val isSelected = category == selectedCategory
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        soundManager.playButtonTap()
+                        selectedCategory = category
+                    },
+                    label = {
+                        Text(
+                            text = category.title,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = KidSkyBlue,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Color.DarkGray
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Game Collection Cards Container
+        // Daily Routine & Habit Norms Game Collection Cards
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Card 1: Traffic Light Game (Active!)
-            GameCollectionCard(
-                title = "🚥 红绿灯模拟与互动",
-                subtitle = "真实仿真信号灯 · 小交警过马路",
-                tag = "🔥 热门推荐",
-                tagBg = KidCandyRed,
-                accentColor = KidAppleGreen,
-                icon = Icons.Default.Traffic,
-                isAvailable = true,
-                onClick = {
-                    soundManager.playButtonTap()
-                    onOpenTrafficLight()
-                }
-            )
+            // 1. Traffic Light (Safety) - ACTIVE!
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.SAFETY) {
+                HabitGameCard(
+                    title = "🚥 红绿灯小交警",
+                    subtitle = "交通安全规范 · 认识红黄绿灯 · 小司机过马路",
+                    tag = "🔥 热门体验",
+                    tagBg = KidCandyRed,
+                    accentColor = KidAppleGreen,
+                    icon = Icons.Default.Traffic,
+                    isAvailable = true,
+                    onClick = {
+                        soundManager.playButtonTap()
+                        onOpenTrafficLight()
+                    }
+                )
+            }
 
-            // Card 2: Color & Shapes (Future slot)
-            GameCollectionCard(
-                title = "🎨 颜色与形状乐园",
-                subtitle = "认识圆形三角形 · 趣味拼图配对",
-                tag = "⭐ 即将推出",
-                tagBg = KidPurple,
-                accentColor = KidPurple,
-                icon = Icons.Default.Category,
-                isAvailable = false,
-                onClick = {
-                    soundManager.speak("这个小游戏正在制作中哦！")
-                }
-            )
+            // 2. Teeth Brushing (Hygiene)
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.HYGIENE) {
+                HabitGameCard(
+                    title = "🪥 刷牙小标兵",
+                    subtitle = "个人卫生规范 · 3分钟早晚刷牙 · 消灭蛀牙小细菌",
+                    tag = "⭐ 即将上线",
+                    tagBg = KidSkyBlue,
+                    accentColor = KidDeepBlue,
+                    icon = Icons.Default.CleaningServices,
+                    isAvailable = false,
+                    onClick = {
+                        soundManager.speak("刷牙小游戏正在制作中，拿起牙刷保护牙齿哦！")
+                    }
+                )
+            }
 
-            // Card 3: Animal Sounds (Future slot)
-            GameCollectionCard(
-                title = "🦁 神奇动物声音",
-                subtitle = "辨识各种动物叫声 · 森林探索启蒙",
-                tag = "⭐ 即将推出",
-                tagBg = KidSoftOrange,
-                accentColor = KidSoftOrange,
-                icon = Icons.Default.Pets,
-                isAvailable = false,
-                onClick = {
-                    soundManager.speak("动物朋友们很快就来啦！")
-                }
-            )
+            // 3. Hand Washing (Hygiene)
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.HYGIENE) {
+                HabitGameCard(
+                    title = "🧼 洗手七步法",
+                    subtitle = "健康防病规范 · 饭前便后勤洗手 · 泡泡消灭病菌",
+                    tag = "⭐ 即将上线",
+                    tagBg = KidAppleGreen,
+                    accentColor = KidAppleGreen,
+                    icon = Icons.Default.Sanitizer,
+                    isAvailable = false,
+                    onClick = {
+                        soundManager.speak("洗手七步法儿歌很快就来啦！")
+                    }
+                )
+            }
 
-            // Card 4: Counting (Future slot)
-            GameCollectionCard(
-                title = "🔢 趣味数数乐园",
-                subtitle = "123 数小鸭 · 基础数字启蒙",
-                tag = "⭐ 即将推出",
-                tagBg = KidSkyBlue,
-                accentColor = KidDeepBlue,
-                icon = Icons.Default.AutoAwesome,
-                isAvailable = false,
-                onClick = {
-                    soundManager.speak("数数小游戏正在准备哦！")
-                }
-            )
+            // 4. Toy Tidying (Manners)
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.MANNERS) {
+                HabitGameCard(
+                    title = "🧸 玩具要回家",
+                    subtitle = "收纳整理规范 · 物归原位 · 自己动手收拾小房间",
+                    tag = "⭐ 即将上线",
+                    tagBg = KidAmber,
+                    accentColor = KidAmber,
+                    icon = Icons.Default.Toys,
+                    isAvailable = false,
+                    onClick = {
+                        soundManager.speak("玩完玩具记得放回盒子里哦！")
+                    }
+                )
+            }
+
+            // 5. Clean Plate (Manners)
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.MANNERS) {
+                HabitGameCard(
+                    title = "🥗 光盘小达人",
+                    subtitle = "健康饮食规范 · 营养均衡不挑食 · 珍惜粮食按时吃饭",
+                    tag = "⭐ 即将上线",
+                    tagBg = KidSoftOrange,
+                    accentColor = KidSoftOrange,
+                    icon = Icons.Default.Fastfood,
+                    isAvailable = false,
+                    onClick = {
+                        soundManager.speak("不挑食身体棒，一起做光盘小标兵！")
+                    }
+                )
+            }
+
+            // 6. Garbage Sorting (Manners/Safety)
+            if (selectedCategory == HabitCategory.ALL || selectedCategory == HabitCategory.MANNERS) {
+                HabitGameCard(
+                    title = "🗑️ 垃圾分类小能手",
+                    subtitle = "公共环保规范 · 垃圾不落地 · 学会认识基础四分类",
+                    tag = "⭐ 即将上线",
+                    tagBg = KidPurple,
+                    accentColor = KidPurple,
+                    icon = Icons.Default.DeleteSweep,
+                    isAvailable = false,
+                    onClick = {
+                        soundManager.speak("爱护地球小环境，垃圾分类投进桶！")
+                    }
+                )
+            }
         }
     }
 
@@ -231,10 +383,17 @@ fun HubScreen(
             }
         )
     }
+
+    if (showUpdateDialog) {
+        UpdateDialog(
+            updateManager = updateManager,
+            onDismiss = { showUpdateDialog = false }
+        )
+    }
 }
 
 @Composable
-fun GameCollectionCard(
+fun HabitGameCard(
     title: String,
     subtitle: String,
     tag: String,
@@ -272,8 +431,8 @@ fun GameCollectionCard(
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                accentColor.copy(alpha = if (isAvailable) 1f else 0.5f),
-                                accentColor.copy(alpha = if (isAvailable) 0.8f else 0.3f)
+                                accentColor.copy(alpha = if (isAvailable) 1f else 0.45f),
+                                accentColor.copy(alpha = if (isAvailable) 0.8f else 0.25f)
                             )
                         ),
                         shape = RoundedCornerShape(20.dp)
@@ -319,11 +478,12 @@ fun GameCollectionCard(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = if (isAvailable) Color.Gray else Color.LightGray
+                    color = if (isAvailable) Color.Gray else Color.LightGray,
+                    lineHeight = 16.sp
                 )
             }
 
-            // Play Icon
+            // Play / Arrow Icon
             if (isAvailable) {
                 Box(
                     modifier = Modifier
