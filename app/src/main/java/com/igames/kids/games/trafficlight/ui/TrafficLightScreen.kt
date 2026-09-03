@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -87,17 +88,18 @@ private fun Modifier.trafficLightGesture(
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
         var totalDragX = 0f
-        var totalDragY = 0f
         var isDrag = false
+        val swipeThreshold = 32.dp.toPx()
+
         while (true) {
-            val event = awaitPointerEvent()
-            val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
             if (change.changedToUp()) {
                 if (isDrag) {
-                    val threshold = 50.dp.toPx()
-                    if (totalDragX < -threshold) {
+                    if (totalDragX < -swipeThreshold) {
                         onSwipeLeft()
-                    } else if (totalDragX > threshold) {
+                    } else if (totalDragX > swipeThreshold) {
                         onSwipeRight()
                     }
                 } else {
@@ -105,10 +107,11 @@ private fun Modifier.trafficLightGesture(
                 }
                 break
             }
+
             val drag = change.positionChange()
             totalDragX += drag.x
-            totalDragY += drag.y
-            if (Math.abs(totalDragX) > 18.dp.toPx() && Math.abs(totalDragX) > Math.abs(totalDragY)) {
+
+            if (Math.abs(totalDragX) > 10.dp.toPx()) {
                 isDrag = true
                 change.consume()
             }
@@ -239,8 +242,7 @@ fun TrafficLightScreen(
                         ClassicLightView(
                             state = state,
                             isBlinkVisible = isBlinkPhaseVisible,
-                            lampSize = classicLampSize,
-                            onLampClick = { onScreenTapToCycleLight() }
+                            lampSize = classicLampSize
                         )
                     }
                     TrafficLightStyle.PEDESTRIAN -> {
@@ -249,8 +251,7 @@ fun TrafficLightScreen(
                         PedestrianLightView(
                             state = state,
                             isBlinkVisible = isBlinkPhaseVisible,
-                            lampSize = pedLampSize,
-                            onLampClick = { onScreenTapToCycleLight() }
+                            lampSize = pedLampSize
                         )
                     }
                     TrafficLightStyle.DIGITAL_COUNTDOWN -> {
@@ -278,8 +279,7 @@ fun TrafficLightScreen(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
                                 lampSize = horizontalLampSize,
-                                isHorizontal = true,
-                                onLampClick = { onScreenTapToCycleLight() }
+                                isHorizontal = true
                             )
                             DigitalCountdownView(
                                 state = state,
@@ -468,16 +468,14 @@ fun TrafficLightScreen(
                             ClassicLightView(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
-                                lampSize = 88.dp,
-                                onLampClick = { onScreenTapToCycleLight() }
+                                lampSize = 88.dp
                             )
                         }
                         TrafficLightStyle.PEDESTRIAN -> {
                             PedestrianLightView(
                                 state = state,
                                 isBlinkVisible = isBlinkPhaseVisible,
-                                lampSize = 110.dp,
-                                onLampClick = { onScreenTapToCycleLight() }
+                                lampSize = 110.dp
                             )
                         }
                         TrafficLightStyle.DIGITAL_COUNTDOWN -> {
@@ -507,8 +505,7 @@ fun TrafficLightScreen(
                                     state = state,
                                     isBlinkVisible = isBlinkPhaseVisible,
                                     lampSize = 64.dp,
-                                    isHorizontal = true,
-                                    onLampClick = { onScreenTapToCycleLight() }
+                                    isHorizontal = true
                                 )
                                 DigitalCountdownView(
                                     state = state,

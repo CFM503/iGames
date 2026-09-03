@@ -1,9 +1,9 @@
 {
-  "versionName": "1.0.3",
-  "versionCode": 1788424396,
-  "tagName": "v1.0.3",
-  "releaseNotes": "🚀 iGames 最新版本 v1.0.3 已发布，包含全新日常生活习惯规范小游戏与体验优化！",
-  "publishedAt": "2026-09-03T08:33:16Z",
-  "downloadUrl": "https://github.com/CFM503/iGames/releases/download/v1.0.3/iGames-release.apk",
+  "versionName": "1.0.4",
+  "versionCode": 5,
+  "tagName": "v1.0.4",
+  "releaseNotes": "🚀 iGames v1.0.4 全新优化：1. 重构左右划动手势响应逻辑（捕获阶段优先分发+降低滑动阈值），彻底解决划动切灯有时失效的问题；2. 永久内置官方发布证书，应用内升级更稳健！",
+  "publishedAt": "2026-09-03T08:40:00Z",
+  "downloadUrl": "https://github.com/CFM503/iGames/releases/download/v1.0.4/iGames-release.apk",
   "apkFileName": "iGames-release.apk"
 }
