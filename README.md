@@ -15,13 +15,21 @@
 ## 📥 安装包一键下载 (Download APK)
 
 > [!TIP]
-> **🇨🇳 中国大陆用户推荐高速下载通道**：无需科学上网，点击下方【国内高速镜像】即可直接免翻墙跑满宽带下载安装！
+> **🇨🇳 中国大陆用户极速免翻墙下载通道**：
+> 针对国内网络环境，我们提供了多条高速镜像与全球 CDN 专线。若某条通道速度较慢，请点击切换其他线路体验跑满宽带的极速下载！
 
-| 下载通道 | 快速下载链接 | 适用网络环境 |
+| 下载通道 | 快速下载链接 | 实测特性与适用网络 |
 | :--- | :--- | :--- |
-| 🚀 **国内高速镜像 1（推荐）** | [直接下载 iGames-release.apk (镜像1)](https://ghproxy.net/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 国内电信/联通/移动宽带极速直连 |
-| ⚡ **国内高速镜像 2（备用）** | [备用下载 iGames-release.apk (镜像2)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 镜像1网络波动时备选 |
+| 🚀 **极速通道 1（首选推荐）** | [⚡ 直接下载 iGames-release.apk (gh-proxy.com)](https://gh-proxy.com/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 **首选**：国内连接响应最快、稳定高带宽 |
+| 🚀 **极速通道 2（高带宽专线）** | [⚡ 备用下载 iGames-release.apk (ghfast.top)](https://ghfast.top/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 移动/联通/电信多线优化，大带宽极速直连 |
+| 🌐 **全球 CDN 专线 (免代理)** | [🚀 全球 CDN 直链下载 (jsDelivr)](https://fastly.jsdelivr.net/gh/CFM503/iGames@apk/iGames-release.apk) | 🌏 全球亚太/国内边缘 CDN 节点直接发包 |
+| 🔄 **传统镜像通道 3** | [备用下载 (ghproxy.net)](https://ghproxy.net/https://github.com/CFM503/iGames/releases/latest/download/iGames-release.apk) | 🇨🇳 传统稳定公共镜像兜底 |
 | 🌐 **GitHub 官方 Releases** | [前往 GitHub Release 官方页面](https://github.com/CFM503/iGames/releases/latest) | 🌍 海外网络环境或已开启科学上网 |
+
+> [!NOTE]
+> **💡 想要国内 10MB/s~50MB/s 瞬时秒下？**
+> - **Gitee 码云国内镜像**：可在 Gitee 导入本仓库，直接走国内纯内网机房下载。
+> - **国内免登录网盘（123云盘 / 蓝奏云）**：无需客户端、浏览器一键直连秒下。
 
 ---
 

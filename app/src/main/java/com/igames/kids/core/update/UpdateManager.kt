@@ -61,15 +61,22 @@ class UpdateManager(
             val cleanRaw = rawUrl.trim()
             if (cleanRaw.isBlank()) return emptyList()
 
+            val jsDelivrUrl = "https://fastly.jsdelivr.net/gh/CFM503/iGames@apk/iGames-release.apk"
+
             return when (channel) {
                 UpdateChannel.AUTO -> listOf(
-                    "https://ghproxy.net/$cleanRaw",
                     "https://gh-proxy.com/$cleanRaw",
+                    "https://ghfast.top/$cleanRaw",
+                    jsDelivrUrl,
+                    "https://gh.h233.eu.org/$cleanRaw",
+                    "https://ghproxy.net/$cleanRaw",
                     cleanRaw
                 )
                 UpdateChannel.GHPROXY -> listOf(
-                    "https://ghproxy.net/$cleanRaw",
-                    "https://gh-proxy.com/$cleanRaw"
+                    "https://gh-proxy.com/$cleanRaw",
+                    "https://ghfast.top/$cleanRaw",
+                    jsDelivrUrl,
+                    "https://ghproxy.net/$cleanRaw"
                 )
                 UpdateChannel.DIRECT -> listOf(cleanRaw)
                 UpdateChannel.CUSTOM -> {
@@ -224,8 +231,8 @@ class UpdateManager(
                         val url = URL(currentUrl)
                         connection = (url.openConnection() as HttpURLConnection).apply {
                             instanceFollowRedirects = false
-                            connectTimeout = 8000
-                            readTimeout = 15000
+                            connectTimeout = 6000
+                            readTimeout = 20000
                             setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) iGames-App")
                         }
                         val code = connection.responseCode
@@ -256,7 +263,7 @@ class UpdateManager(
                     inputStream = connection.inputStream
                     outputStream = FileOutputStream(apkFile)
 
-                    val buffer = ByteArray(8192)
+                    val buffer = ByteArray(64 * 1024)
                     var bytesRead: Int
                     var totalBytes: Long = 0
 

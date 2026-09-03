@@ -36,10 +36,10 @@ class UpdateVersionTest {
 
         // AUTO channel: should include high-speed mirrors and raw fallback
         val autoList = UpdateManager.buildMirrorUrls(raw, UpdateChannel.AUTO, "")
-        assertEquals(3, autoList.size)
-        assertEquals("https://ghproxy.net/$raw", autoList[0])
-        assertEquals("https://gh-proxy.com/$raw", autoList[1])
-        assertEquals(raw, autoList[2])
+        assertEquals(6, autoList.size)
+        assertEquals("https://gh-proxy.com/$raw", autoList[0])
+        assertEquals("https://ghfast.top/$raw", autoList[1])
+        assertTrue(autoList.contains(raw))
 
         // DIRECT channel: only raw
         val directList = UpdateManager.buildMirrorUrls(raw, UpdateChannel.DIRECT, "")
