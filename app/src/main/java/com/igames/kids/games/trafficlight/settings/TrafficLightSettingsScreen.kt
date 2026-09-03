@@ -182,7 +182,7 @@ fun TrafficLightSettingsScreen(
 
                     SwitchRow(
                         title = "童趣语音播报",
-                        subtitle = "播报“红灯停，绿灯行，黄灯等一等”",
+                        subtitle = "播报“红灯停，绿灯左右看再通行，黄灯等一等”",
                         checked = isVoiceEnabled,
                         onCheckedChange = { isVoiceEnabled = it }
                     )

@@ -68,7 +68,7 @@ class SoundManager(context: Context) {
             }
         }
         if (isVoiceEnabled) {
-            speak("绿灯亮，向前行！")
+            speak("绿灯亮，左右看一看，确认没有车，再通行！")
         }
     }
 

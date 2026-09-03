@@ -106,7 +106,7 @@ fun CrossRoadGameScreen(
     var starCount by remember { mutableIntStateOf(0) }
     var carProgress by remember { mutableFloatStateOf(0.05f) } // 0.05f (start) to 0.90f (finish)
     var isHoldingGas by remember { mutableStateOf(false) }
-    var alertMessage by remember { mutableStateOf<String?>("绿灯快快走，红灯快快停！") }
+    var alertMessage by remember { mutableStateOf<String?>("绿灯亮，左右看一看，确认没车再通行！") }
 
     // Driving physics loop
     LaunchedEffect(Unit) {
@@ -114,7 +114,7 @@ fun CrossRoadGameScreen(
             if (isHoldingGas) {
                 when (state) {
                     TrafficLightState.GREEN, TrafficLightState.GREEN_BLINK -> {
-                        alertMessage = "🚗 绿灯通行，加油向前开！"
+                        alertMessage = "🚗 绿灯通行，左右看没车再向前开！"
                         carProgress = (carProgress + 0.015f).coerceAtMost(0.92f)
                         if (carProgress >= 0.90f) {
                             // Reached Destination!
