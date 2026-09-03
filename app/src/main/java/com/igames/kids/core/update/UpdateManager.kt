@@ -106,6 +106,8 @@ class UpdateManager(
         _updateInfo.value = _updateInfo.value.copy(isChecking = true, errorMessage = null)
         withContext(Dispatchers.IO) {
             val candidateEndpoints = listOf(
+                "https://gh-proxy.com/https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json",
+                "https://ghfast.top/https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json",
                 "https://fastly.jsdelivr.net/gh/$repoOwner/$repoName@main/version.json",
                 "https://cdn.jsdelivr.net/gh/$repoOwner/$repoName@main/version.json",
                 "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
@@ -132,7 +134,12 @@ class UpdateManager(
                             // Format of version.json
                             val tagName = json.optString("tagName", "")
                             val releaseNotes = json.optString("releaseNotes", "新版本日常习惯小游戏与体验优化")
-                            val downloadUrl = json.optString("downloadUrl", "")
+                            val rawDownloadUrl = json.optString("downloadUrl", "")
+                            val downloadUrl = if (rawDownloadUrl.isNotBlank()) {
+                                rawDownloadUrl
+                            } else {
+                                "https://github.com/$repoOwner/$repoName/releases/download/$tagName/iGames-release.apk"
+                            }
                             val apkFileName = json.optString("apkFileName", "iGames-release.apk")
                             val publishedAt = json.optString("publishedAt", "")
                             val hasNewer = isNewerVersion(CURRENT_VERSION_NAME, tagName)
@@ -334,6 +341,18 @@ class UpdateManager(
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+
+            // Explicitly grant URI read permission to package installers for OEM compatibility (Xiaomi, Huawei, Oppo, Vivo)
+            try {
+                val resInfoList = context.packageManager.queryIntentActivities(installIntent, 0)
+                for (resolveInfo in resInfoList) {
+                    val packageName = resolveInfo.activityInfo.packageName
+                    context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "grantUriPermission warning: ${e.message}")
             }
 
             context.startActivity(installIntent)
